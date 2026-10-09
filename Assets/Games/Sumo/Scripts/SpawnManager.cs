@@ -1,0 +1,78 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace ThreeInOne.Sumo
+{
+    public class SpawnManager : MonoBehaviour
+    {
+        public GameManager GameManager;
+
+        public GameObject[] EnemyPrefabs;
+        public GameObject BossPrefab;
+        public GameObject PowerupPrefab;
+
+        private static readonly int _spawnBossEveryNWave = 3;
+
+        private int _waveNumber = 0;
+
+
+        private void Update()
+        {
+            if (Time.timeScale == 0f) return;
+
+            int enemyCount = FindObjectsByType<Enemy>().Length;
+            if (enemyCount == 0 && GameManager.GameOver == false)
+            {
+                SpawnPowerup();
+
+                var regularEnemiesCount = ++_waveNumber;
+                if ((_waveNumber - 1) % (1 + _spawnBossEveryNWave) == _spawnBossEveryNWave)
+                {
+                    SpawnBoss();
+                    regularEnemiesCount--;
+                }
+                SpawnEnemyWave(regularEnemiesCount);
+            }
+        }
+
+
+        private Vector3 GenerateSpawnPosition() 
+        {
+            return SpawnPosition.Generate();
+        }
+
+
+        private void SpawnEnemyWave(int enemiesToSpawn)
+        {
+            for (int i = 0; i < enemiesToSpawn; i++)
+            {
+                var prefabIndex = Random.Range(0, EnemyPrefabs.Length);
+                var prefab = EnemyPrefabs[prefabIndex];
+                var spawnPos = GenerateSpawnPosition();
+                Instantiate(prefab, spawnPos, prefab.transform.rotation);
+            }
+        }
+
+
+        private void SpawnBoss()
+        {
+            var spawnPos = GenerateSpawnPosition();
+            Instantiate(BossPrefab, spawnPos, BossPrefab.transform.rotation);
+        }
+
+
+        private void SpawnPowerup()
+        {
+            var powerTypeValues = System.Enum.GetValues(typeof(PowerType));
+            var powerTypeIndex = Random.Range(0, powerTypeValues.Length);
+            var powerType = (PowerType)powerTypeValues.GetValue(powerTypeIndex);
+
+            var spawnPos = GenerateSpawnPosition();
+
+            var gameObject = Instantiate(PowerupPrefab, spawnPos, PowerupPrefab.transform.rotation);
+            var powerupComponent = gameObject.GetComponent<Powerup>();
+            powerupComponent.PowerType = powerType;
+        }
+    }
+}
